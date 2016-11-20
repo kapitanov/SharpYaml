@@ -1,6 +1,8 @@
 param($name)
 
-gci ./output | Remove-Item 
+if(test-path ./output) {
+    gci ./output | Remove-Item
+} 
 
 dotnet restore ./SharpYaml
 dotnet pack --output ./output ./SharpYaml

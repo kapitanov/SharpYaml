@@ -56,7 +56,7 @@ using System;
 #endif
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("SharpYaml")]
-[assembly: AssemblyCopyright("Copyright © 2015 - Alexandre Mutel")]
+[assembly: AssemblyCopyright("Copyright ï¿½ 2015 - Alexandre Mutel")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -72,4 +72,6 @@ using System;
 [assembly: AssemblyVersion("1.5.4.*")]
 [assembly: AssemblyFileVersion("1.5.4")]
 
+#if !NETSTANDARD
 [assembly: CLSCompliant(true)]
+#endif

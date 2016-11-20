@@ -15,13 +15,14 @@
   "authors": [ "Alexandre Mutel" ],
   "language": "en-US",
   "buildOptions": {
-    "compile": [ "**/*.cs", "../CommonAssemblyInfo.cs" ]
+    "compile": [ "**/*.cs", "../CommonAssemblyInfo.cs" ],
+    "nowarn": [ "CS3003", "CS0162" ]
   },
   "frameworks": {
-    "netstandard1.5": {
+    "netstandard1.6": {
       "dependencies": {
-        "NETStandard.Library": "1.5.0",
-        "System.Runtime.Serialization.Primitives": "4.2.0"
+        "NETStandard.Library": "1.6.0",
+        "System.Runtime.Serialization.Primitives": "4.3.0"
       },
       "buildOptions": {
         "define": [ "NETSTANDARD" ]
