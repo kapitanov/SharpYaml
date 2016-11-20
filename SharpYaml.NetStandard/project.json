@@ -15,7 +15,7 @@
   "authors": [ "Alexandre Mutel" ],
   "language": "en-US",
   "buildOptions": {
-    "compile": [ "**/*.cs", "../CommonAssemblyInfo.cs" ],
+    "compile": [ "../SharpYaml/**/*.cs", "../CommonAssemblyInfo.cs" ],
     "nowarn": [ "CS3003", "CS0162" ]
   },
   "frameworks": {
