@@ -47,6 +47,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using SharpYaml.Serialization.Descriptors;
+#if NETSTANDARD
+using System.Reflection;
+#endif
 
 namespace SharpYaml.Serialization
 {
@@ -77,7 +80,8 @@ namespace SharpYaml.Serialization
             if (type == null)
                 return null;
 
-            // TODO change this code. Make it configurable?
+            // TODO change this code. Make it configurable?            
+#if !NETSTANDARD
             if (type.IsInterface)
             {
                 Type implementationType;
@@ -97,6 +101,28 @@ namespace SharpYaml.Serialization
                 }
             }
             return type;
+#else
+            var ti = type.GetTypeInfo();
+            if (ti.IsInterface)
+            {                
+                Type implementationType;
+                if (ti.IsGenericType)
+                {
+                    if (DefaultInterfaceImplementations.TryGetValue(ti.GetGenericTypeDefinition(), out implementationType))
+                    {
+                        type = implementationType.GetTypeInfo().MakeGenericType(ti.GetGenericArguments());
+                    }
+                }
+                else
+                {
+                    if (DefaultInterfaceImplementations.TryGetValue(type, out implementationType))
+                    {
+                        type = implementationType;
+                    }
+                }
+            }
+            return type;
+#endif     
         }
 
         public object Create(Type type)
@@ -107,7 +133,12 @@ namespace SharpYaml.Serialization
             if (PrimitiveDescriptor.IsPrimitive(type) || type.IsArray)
                 return null;
 
+#if !NETSTANDARD
             return type.GetConstructor(EmptyTypes) != null || type.IsValueType ? Activator.CreateInstance(type) : null;
+#else            
+            var ti = type.GetTypeInfo();
+            return ti.GetConstructor(EmptyTypes) != null || ti.IsValueType ? Activator.CreateInstance(type) : null;
+#endif            
         }
     }
 }

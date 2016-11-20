@@ -1,0 +1,8 @@
+{
+    "buildOptions": {
+        "compile": "../SharpYaml/**/*.cs"
+    },
+    "frameworks": {
+        "netstandard1.6": {}
+    }
+}

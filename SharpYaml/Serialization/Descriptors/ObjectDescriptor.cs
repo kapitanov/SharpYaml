@@ -96,7 +96,11 @@ namespace SharpYaml.Serialization.Descriptors
             this.AttributeRegistry = attributeRegistry;
             this.type = type;
 
+#if !NETSTANDARD
             attributes = AttributeRegistry.GetAttributes(type);
+#else
+            attributes = AttributeRegistry.GetAttributes(type.GetTypeInfo());
+#endif
 
             this.style = YamlStyle.Any;
             foreach (var attribute in attributes)
@@ -236,7 +240,11 @@ namespace SharpYaml.Serialization.Descriptors
                 bindingFlags |= BindingFlags.NonPublic;
 
             // Add all public properties with a readable get method
+#if !NETSTANDARD
             var memberList = (from propertyInfo in type.GetProperties(bindingFlags)
+#else
+            var memberList = (from propertyInfo in type.GetTypeInfo().GetProperties(bindingFlags)
+#endif            
                 where
                     propertyInfo.CanRead && propertyInfo.GetIndexParameters().Length == 0
                 select new PropertyDescriptor(propertyInfo, NamingConvention.Comparer)
@@ -245,7 +253,11 @@ namespace SharpYaml.Serialization.Descriptors
                 select member).Cast<IMemberDescriptor>().ToList();
 
             // Add all public fields
+#if !NETSTANDARD            
             memberList.AddRange((from fieldInfo in type.GetFields(bindingFlags)
+#else            
+            memberList.AddRange((from fieldInfo in type.GetTypeInfo().GetFields(bindingFlags)
+#endif            
                 select new FieldDescriptor(fieldInfo, NamingConvention.Comparer)
                 into member
                 where PrepareMember(member)
@@ -324,7 +336,12 @@ namespace SharpYaml.Serialization.Descriptors
             else
             {
                 // Else we cannot only assign its content if it is a class
+#if !NETSTANDARD                
                 member.SerializeMemberMode = (memberType != typeof(string) && memberType.IsClass) || memberType.IsInterface || type.IsAnonymous() ? SerializeMemberMode.Content : SerializeMemberMode.Never;
+#else
+                var ti = memberType.GetTypeInfo();
+                member.SerializeMemberMode = (memberType != typeof(string) && ti.IsClass) || ti.IsInterface || type.IsAnonymous() ? SerializeMemberMode.Content : SerializeMemberMode.Never;
+#endif                
             }
 
             // If it's a private member, check it has a YamlMemberAttribute on it
@@ -345,7 +362,11 @@ namespace SharpYaml.Serialization.Descriptors
                 if (!member.HasSet)
                 {
                     if (memberAttribute.SerializeMethod == SerializeMemberMode.Assign ||
+#if !NETSTANDARD
                         (memberType.IsValueType && member.SerializeMemberMode == SerializeMemberMode.Content))
+#else                        
+                        (memberType.GetTypeInfo().IsValueType && member.SerializeMemberMode == SerializeMemberMode.Content))
+#endif                        
                         throw new ArgumentException("{0} {1} is not writeable by {2}.".DoFormat(memberType.FullName, member.OriginalName, memberAttribute.SerializeMethod.ToString()));
                 }
 
@@ -376,7 +397,11 @@ namespace SharpYaml.Serialization.Descriptors
             //	  ShouldSerializeSomeProperty => call it
             //	  DefaultValueAttribute(default) => compare to it
             //	  otherwise => true
+#if !NETSTANDARD            
             var shouldSerialize = type.GetMethod("ShouldSerialize" + member.OriginalName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+#else            
+            var shouldSerialize = type.GetTypeInfo().GetMethod("ShouldSerialize" + member.OriginalName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+#endif            
             if (shouldSerialize != null && shouldSerialize.ReturnType == typeof(bool) && member.ShouldSerialize == null)
                 member.ShouldSerialize = obj => (bool) shouldSerialize.Invoke(obj, EmptyObjectArray);
 

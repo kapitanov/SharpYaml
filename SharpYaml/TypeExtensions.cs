@@ -45,6 +45,9 @@
 
 using System;
 using System.Collections.Generic;
+#if NETSTANDARD
+using System.Linq;
+#endif
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -64,18 +67,31 @@ namespace SharpYaml
         {
             if (genericType == null)
                 throw new ArgumentNullException("genericType");
+#if !NETSTANDARD                
             if (!genericType.IsGenericTypeDefinition)
+#else
+            if (!genericType.GetTypeInfo().IsGenericTypeDefinition)
+#endif            
                 throw new ArgumentException("Expecting a generic type definition", "genericType");
+                
 
             var nextType = type;
             while (nextType != null)
             {
+#if !NETSTANDARD
                 var checkType = nextType.IsGenericType ? nextType.GetGenericTypeDefinition() : nextType;
+#else
+                var checkType = nextType.GetTypeInfo().IsGenericType ? nextType.GetTypeInfo().GetGenericTypeDefinition() : nextType;
+#endif
                 if (checkType == genericType)
                 {
                     return true;
                 }
+#if !NETSTANDARD                
                 nextType = nextType.BaseType;
+#else
+                nextType = nextType.GetTypeInfo().BaseType;
+#endif
             }
             return false;
         }
@@ -87,6 +103,7 @@ namespace SharpYaml
             if (lookInterfaceType == null)
                 throw new ArgumentNullException("lookInterfaceType");
 
+#if !NETSTANDARD
             if (lookInterfaceType.IsGenericTypeDefinition)
             {
                 if (lookInterfaceType.IsInterface)
@@ -104,6 +121,39 @@ namespace SharpYaml
                 if (lookInterfaceType.IsAssignableFrom(type))
                     return lookInterfaceType;
             }
+#else
+            var lookInterfaceTypeInfo = lookInterfaceType.GetTypeInfo();
+            if (lookInterfaceTypeInfo.IsGenericTypeDefinition)
+            {
+                if (lookInterfaceTypeInfo.IsInterface)
+                {
+
+                    foreach (var interfaceType in type.GetTypeInfo().GetInterfaces())
+                    {
+                        var interfaceTypeInfo = interfaceType.GetTypeInfo();
+                        if (interfaceTypeInfo.IsGenericType
+                            && interfaceTypeInfo.GetGenericTypeDefinition() == lookInterfaceType)
+                        {
+                            return interfaceType;
+                        }
+                    }
+                }
+
+                for (Type t = type; t != null; t = t.GetTypeInfo().BaseType)
+                {
+                    var tInfo = t.GetTypeInfo(); 
+                    if (tInfo.IsGenericType && tInfo.GetGenericTypeDefinition() == lookInterfaceType)
+                    {
+                        return t;
+                    }
+                }
+            }
+            else
+            {
+                if (lookInterfaceType.GetTypeInfo().IsAssignableFrom(type))
+                    return lookInterfaceType;
+            }
+#endif            
 
             return null;
         }
@@ -153,10 +203,18 @@ namespace SharpYaml
                 type = type.GetElementType();
             sb.Append(type.Name);
             // generic arguments
+#if !NETSTANDARD
             if (type.IsGenericType)
+#else            
+            if (type.GetTypeInfo().IsGenericType)
+#endif            
             {
                 sb.Append("[[");
+#if !NETSTANDARD                
                 var genericArguments = type.GetGenericArguments();
+#else                
+                var genericArguments = type.GetTypeInfo().GetGenericArguments();
+#endif
                 for (var i = 0; i < genericArguments.Length; i++)
                 {
                     if (i > 0)
@@ -169,7 +227,11 @@ namespace SharpYaml
                 sb.Append("[]");
             // assembly
             if (appendAssemblyName)
+#if !NETSTANDARD            
                 sb.Append(",").Append(GetShortAssemblyName(type.Assembly));
+#else                
+                sb.Append(",").Append(GetShortAssemblyName(type.GetTypeInfo().Assembly));
+#endif                
         }
 
         /// <summary>
@@ -204,9 +266,16 @@ namespace SharpYaml
                 if (anonymousTypes.TryGetValue(type, out isAnonymous))
                     return isAnonymous;
 
+#if !NETSTANDARD
                 isAnonymous = type.GetCustomAttributes(typeof(CompilerGeneratedAttribute), false).Length > 0
                               && type.Namespace == null
                               && type.FullName.Contains("AnonymousType");
+#else
+                var ti = type.GetTypeInfo();
+                isAnonymous = ti.GetCustomAttributes(typeof(CompilerGeneratedAttribute), false).Count() > 0
+                              && ti.Namespace == null
+                              && ti.FullName.Contains("AnonymousType");
+#endif                              
 
                 anonymousTypes.Add(type, isAnonymous);
                 return isAnonymous;
@@ -229,19 +298,39 @@ namespace SharpYaml
         /// <param name="type"></param>
         /// <returns></returns>
         public static bool IsPureValueType(this Type type)
-        {
+        {            
             if (type == null)
                 return false;
             if (type == typeof(IntPtr))
                 return false;
+#if NETSTANDARD
+            var ti = type.GetTypeInfo();
+#endif
+            
+#if !NETSTANDARD            
             if (type.IsPrimitive)
+#else
+            if (ti.IsPrimitive)
+#endif
                 return true;
+#if !NETSTANDARD                
             if (type.IsEnum)
+#else            
+            if (ti.IsEnum)
+#endif
                 return true;
+#if !NETSTANDARD                
             if (!type.IsValueType)
+#else
+            if (!ti.IsValueType)
+#endif
                 return false;
             // struct
+#if !NETSTANDARD
             foreach (var f in type.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance))
+#else
+            foreach (var f in ti.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance))
+#endif
                 if (!IsPureValueType(f.FieldType))
                     return false;
             return true;
@@ -254,7 +343,11 @@ namespace SharpYaml
         /// <returns>true if the specified <paramref name="type"/> is a struct type; otehrwise false.</returns>
         public static bool IsStruct(this Type type)
         {
+#if !NETSTANDARD            
             return type != null && type.IsValueType && !type.IsPrimitive;
+#else            
+            return type != null && type.GetTypeInfo().IsValueType && !type.GetTypeInfo().IsPrimitive;
+#endif            
         }
 
         /// <summary>

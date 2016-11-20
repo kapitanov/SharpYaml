@@ -69,7 +69,7 @@ namespace SharpYaml.Serialization
         /// <param name="inherit">if set to <c>true</c> includes inherited attributes.</param>
         /// <returns>An enumeration of <see cref="Attribute"/>.</returns>
         List<Attribute> GetAttributes(MemberInfo memberInfo, bool inherit = true);
-
+        
         /// <summary>
         /// Gets or sets the prepare member callback.
         /// </summary>

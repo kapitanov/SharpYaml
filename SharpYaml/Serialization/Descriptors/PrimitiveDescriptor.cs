@@ -72,9 +72,17 @@ namespace SharpYaml.Serialization.Descriptors
                 throw new ArgumentException("Type [{0}] is not a primitive");
 
             // Handle remap for enum items
+#if !NETSTANDARD
             if (type.IsEnum)
+#else
+            if (type.GetTypeInfo().IsEnum)
+#endif
             {
+#if !NETSTANDARD
                 foreach (var member in type.GetFields(BindingFlags.Public | BindingFlags.Static))
+#else
+                foreach (var member in type.GetTypeInfo().GetFields(BindingFlags.Public | BindingFlags.Static))
+#endif
                 {
                     var attributes = attributeRegistry.GetAttributes(member);
                     foreach (var attribute in attributes)

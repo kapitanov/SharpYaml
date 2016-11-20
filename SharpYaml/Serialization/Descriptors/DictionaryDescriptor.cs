@@ -78,6 +78,7 @@ namespace SharpYaml.Serialization.Descriptors
                 throw new ArgumentException("Expecting a type inheriting from System.Collections.IDictionary", "type");
 
             // extract Key, Value types from IDictionary<??, ??>
+#if !NETSTANDARD
             var interfaceType = type.GetInterface(typeof(IDictionary<,>));
             if (interfaceType != null)
             {
@@ -93,6 +94,24 @@ namespace SharpYaml.Serialization.Descriptors
                 valueType = typeof(object);
                 addMethod = type.GetMethod("Add", new[] {keyType, valueType});
             }
+#else
+            var interfaceType = type.GetInterface(typeof(IDictionary<,>));
+            if (interfaceType != null)
+            {
+                var interfaceTypeInfo = interfaceType.GetTypeInfo();
+                keyType = interfaceTypeInfo.GetGenericArguments()[0];
+                valueType = interfaceTypeInfo.GetGenericArguments()[1];
+                IsGenericDictionary = true;
+                getEnumeratorGeneric = typeof(DictionaryDescriptor).GetTypeInfo().GetMethod("GetGenericEnumerable").MakeGenericMethod(keyType, valueType);
+                addMethod = interfaceTypeInfo.GetMethod("Add", new[] { keyType, valueType });
+            }
+            else
+            {
+                keyType = typeof(object);
+                valueType = typeof(object);
+                addMethod = type.GetTypeInfo().GetMethod("Add", new[] { keyType, valueType });
+            }
+#endif
         }
 
         public override void Initialize()
@@ -206,7 +225,11 @@ namespace SharpYaml.Serialization.Descriptors
         /// <returns><c>true</c> if the specified type is dictionary; otherwise, <c>false</c>.</returns>
         public static bool IsDictionary(Type type)
         {
+#if !NETSTANDARD
             return typeof(IDictionary).IsAssignableFrom(type) || type.HasInterface(typeof(IDictionary<,>));
+#else
+            return typeof(IDictionary).GetTypeInfo().IsAssignableFrom(type) || type.HasInterface(typeof(IDictionary<,>));
+#endif
         }
 
         public static IEnumerable<KeyValuePair<object, object>> GetGenericEnumerable<TKey, TValue>(IDictionary<TKey, TValue> dictionary)

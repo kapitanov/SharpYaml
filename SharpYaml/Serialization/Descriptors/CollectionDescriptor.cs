@@ -48,6 +48,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+#if NETSTANDARD
+using System.Reflection;
+#endif
 
 namespace SharpYaml.Serialization.Descriptors
 {
@@ -78,13 +81,19 @@ namespace SharpYaml.Serialization.Descriptors
                 throw new ArgumentException("Expecting a type inheriting from System.Collections.ICollection", "type");
 
             // Gets the element type
+#if !NETSTANDARD            
             var collectionType = type.GetInterface(typeof(IEnumerable<>));
             ElementType = (collectionType != null) ? collectionType.GetGenericArguments()[0] : typeof(object);
+#else            
+            var collectionType = type.GetTypeInfo().GetInterface(typeof(IEnumerable<>).GetTypeInfo().FullName);
+            ElementType = (collectionType != null) ? collectionType.GetTypeInfo().GetGenericArguments()[0] : typeof(object);
+#endif                        
 
             // implements ICollection<T> 
             Type itype;
             if ((itype = type.GetInterface(typeof(ICollection<>))) != null)
             {
+#if !NETSTANDARD                
                 var add = itype.GetMethod("Add", new[] {ElementType});
                 CollectionAddFunction = (obj, value) => add.Invoke(obj, new[] {value});
                 var countMethod = itype.GetProperty("Count").GetGetMethod();
@@ -92,9 +101,23 @@ namespace SharpYaml.Serialization.Descriptors
                 var isReadOnly = itype.GetProperty("IsReadOnly").GetGetMethod();
                 IsReadOnlyFunction = obj => (bool) isReadOnly.Invoke(obj, null);
                 isKeyedCollection = type.ExtendsGeneric(typeof(KeyedCollection<,>));
+#else
+                var itypeInfo = itype.GetTypeInfo();
+                var add = itypeInfo.GetMethod("Add", new[] {ElementType});
+                CollectionAddFunction = (obj, value) => add.Invoke(obj, new[] {value});
+                var countMethod = itypeInfo.GetProperty("Count").GetGetMethod();
+                GetCollectionCountFunction = o => (int) countMethod.Invoke(o, null);
+                var isReadOnly = itypeInfo.GetProperty("IsReadOnly").GetGetMethod();
+                IsReadOnlyFunction = obj => (bool) isReadOnly.Invoke(obj, null);
+                isKeyedCollection = type.ExtendsGeneric(typeof(KeyedCollection<,>));
+#endif
             }
-            // implements IList 
+            // implements IList
+#if !NETSTANDARD             
             else if (typeof(IList).IsAssignableFrom(type))
+#else            
+            else if (typeof(IList).GetTypeInfo().IsAssignableFrom(type))
+#endif            
             {
                 CollectionAddFunction = (obj, value) => ((IList) obj).Add(value);
                 GetCollectionCountFunction = o => ((IList) o).Count;
@@ -166,7 +189,12 @@ namespace SharpYaml.Serialization.Descriptors
         /// <returns><c>true</c> if the specified type is collection; otherwise, <c>false</c>.</returns>
         public static bool IsCollection(Type type)
         {
+#if !NETSTANDARD            
             return !type.IsArray && (typeof(ICollection).IsAssignableFrom(type) || type.HasInterface(typeof(ICollection<>)));
+#else            
+            var ti = type.GetTypeInfo(); 
+            return !ti.IsArray && (typeof(ICollection).GetTypeInfo().IsAssignableFrom(type) || typeof(ICollection<>).GetTypeInfo().IsAssignableFrom(type));
+#endif            
         }
 
         /// <inheritdoc/>

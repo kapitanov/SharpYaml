@@ -79,7 +79,11 @@ namespace SharpYaml.Serialization.Descriptors
 
             elementType = type.GetElementType();
             listType = typeof(List<>).MakeGenericType(ElementType);
+#if !NETSTANDARD            
             toArrayMethod = listType.GetMethod("ToArray");
+#else            
+            toArrayMethod = listType.GetTypeInfo().GetMethod("ToArray");
+#endif            
         }
 
         public override DescriptorCategory Category { get { return DescriptorCategory.Array; } }

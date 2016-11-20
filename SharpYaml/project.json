@@ -1,0 +1,33 @@
+{
+  "version": "1.5.4",
+  "packOptions": {
+    "projectUrl": "https://github.com/xoofx/SharpYaml",
+    "licenseUrl": "https://github.com/xoofx/SharpYaml/blob/master/LICENSE.txt",
+    "summary": "This package contains the YAML parser and serializer/deserializer.",
+    "tags": [ "yaml", "parser", "development", "library" ],
+    "files": {
+      "include": [
+        "../LICENSE.txt"
+      ]
+    }
+  },
+  "description": "A YAML portable .NET library. providing parsing and serialization of object graphs.",
+  "authors": [ "Alexandre Mutel" ],
+  "language": "en-US",
+  "buildOptions": {
+    "compile": [ "**/*.cs", "../CommonAssemblyInfo.cs" ]
+  },
+  "frameworks": {
+    "netstandard1.5": {
+      "dependencies": {
+        "NETStandard.Library": "1.5.0",
+        "System.Runtime.Serialization.Primitives": "4.2.0"
+      },
+      "buildOptions": {
+        "define": [ "NETSTANDARD" ]
+      }
+    },
+    "net40": {},
+    "net45": {}
+  }
+}

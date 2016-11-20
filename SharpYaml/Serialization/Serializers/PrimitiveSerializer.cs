@@ -44,6 +44,9 @@
 // SOFTWARE.
 
 using System;
+#if NETSTANDARD
+using System.Reflection;
+#endif
 using System.Globalization;
 using SharpYaml.Events;
 using SharpYaml.Serialization.Descriptors;
@@ -79,7 +82,11 @@ namespace SharpYaml.Serialization.Serializers
             }
 
             // If type is an enum, try to parse it
+#if !NETSTANDARD            
             if (type.IsEnum)
+#else            
+            if (type.GetTypeInfo().IsEnum)
+#endif            
             {
                 bool enumRemapped;
                 var result = primitiveType.ParseEnum(text, out enumRemapped);
@@ -202,7 +209,11 @@ namespace SharpYaml.Serialization.Serializers
             var valueType = value.GetType();
 
             // Handle string
+#if !NETSTANDARD            
             if (valueType.IsEnum)
+#else            
+            if (valueType.GetTypeInfo().IsEnum)
+#endif            
             {
                 text = ((Enum) Enum.ToObject(valueType, value)).ToString("G");
             }

@@ -90,7 +90,11 @@ namespace SharpYaml.Serialization
                 }
 
                 // Else retrieve all default attributes
+#if !NETSTANDARD                
                 var defaultAttributes = Attribute.GetCustomAttributes(memberInfo, inherit);
+#else
+                var defaultAttributes = memberInfo.GetCustomAttributes(inherit);
+#endif                
                 attributes = defaultAttributes.ToList();
 
                 // And add registered attributes
@@ -114,8 +118,7 @@ namespace SharpYaml.Serialization
                 return attributes;
             }
         }
-
-
+        
         /// <summary>
         /// Registers an attribute for the specified member. Restriction: Attributes registered this way cannot be listed in inherited attributes.
         /// </summary>

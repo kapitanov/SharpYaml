@@ -63,7 +63,11 @@ namespace SharpYaml.Serialization
 
         private static readonly List<Assembly> DefaultLookupAssemblies = new List<Assembly>()
         {
+#if !NETSTANDARD            
             typeof(int).Assembly,
+#else            
+            typeof(int).GetTypeInfo().Assembly,
+#endif            
         };
 
         /// <summary>
@@ -109,7 +113,11 @@ namespace SharpYaml.Serialization
                 // Register all tags automatically.
                 foreach (var type in assembly.GetTypes())
                 {
+#if !NETSTANDARD
                     var attributes = attributeRegistry.GetAttributes(type);
+#else
+                    var attributes = attributeRegistry.GetAttributes(type.GetTypeInfo());
+#endif
                     foreach (var attribute in attributes)
                     {
                         string name = null;
@@ -135,7 +143,11 @@ namespace SharpYaml.Serialization
                     }
 
                     // Automatically register YamlSerializableFactory
+#if !NETSTANDARD
                     if (typeof(IYamlSerializableFactory).IsAssignableFrom(type) && type.GetConstructor(types) != null)
+#else
+                    if (typeof(IYamlSerializableFactory).GetTypeInfo().IsAssignableFrom(type) && type.GetTypeInfo().GetConstructor(types) != null)
+#endif
                     {
                         try
                         {

@@ -46,6 +46,9 @@
 using System;
 using SharpYaml.Events;
 using SharpYaml.Serialization.Logging;
+#if NETSTANDARD
+using System.Reflection;
+#endif
 
 namespace SharpYaml.Serialization.Serializers
 {
@@ -322,7 +325,11 @@ namespace SharpYaml.Serialization.Serializers
 
             // Handle late binding
             // Value types need to be reassigned even if it was a Content
+#if !NETSTANDARD            
             if (memberAccessor.HasSet && (memberAccessor.SerializeMemberMode != SerializeMemberMode.Content || memberAccessor.Type.IsValueType || memberValue != oldMemberValue))
+#else            
+            if (memberAccessor.HasSet && (memberAccessor.SerializeMemberMode != SerializeMemberMode.Content || memberAccessor.Type.GetTypeInfo().IsValueType || memberValue != oldMemberValue))
+#endif            
             {
                 memberAccessor.Set(objectContext.Instance, memberValue);
             }
