@@ -16,4 +16,4 @@ release/*
 /packages
 
 project.lock.json
-output
+artifacts
